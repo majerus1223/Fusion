@@ -1,0 +1,43 @@
+gateway:
+  enabled: true
+  ingress:
+    enabled: true
+    tls: []
+    hosts:
+      - host: tempo2.domain.com
+        paths:
+          - path: /
+            pathType: Prefix
+storage:
+  trace:
+    backend: s3
+    s3:
+      access_key: 'grafana-tempo'
+      secret_key: 'supersecret'
+      bucket: 'tempo-traces'
+      endpoint: 'tempo-minio:9000'
+      insecure: true
+
+minio:
+  enabled: true
+  mode: standalone
+  rootUser: grafana-tempo
+  rootPassword: supersecret
+  buckets:
+    - name: tempo-traces
+      policy: none
+      purge: false
+
+traces:
+  otlp:
+    grpc:
+      enabled: true
+    http:
+      enabled: true
+  zipkin:
+    enabled: false
+  jaeger:
+    thriftHttp:
+      enabled: false
+  opencensus:
+    enabled: false

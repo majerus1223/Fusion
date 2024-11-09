@@ -1,0 +1,162 @@
+/* ------- Linux grafana alloy configuration file for logs, metrics, traces and profiles ------- */
+/* ------- Replace domain.com references with your domain ------- */
+
+/* ------- Metrics definition ------- */ 
+/* ------- Metrics definition ------- */
+/* ------- Metrics definition ------- */
+
+prometheus.exporter.unix "local_system" { }
+
+prometheus.scrape "scrape_metrics" {
+  targets         = prometheus.exporter.unix.local_system.targets
+  forward_to      = [prometheus.relabel.add_labels.receiver]
+  scrape_interval = "10s"
+}
+
+prometheus.relabel "add_labels" {
+  forward_to = [prometheus.remote_write.mimir.receiver]
+
+  rule {
+    target_label = "instance"
+    replacement  = constants.hostname
+  }
+
+  rule {
+    target_label = "job"
+    replacement  = "node_exporter"
+  }
+
+  rule {
+    target_label = "environment"
+    replacement  = "production"
+  }
+
+  rule {
+    target_label = "datacenter"
+    replacement  = "dc1"
+  }
+}
+
+prometheus.remote_write "mimir" {
+  endpoint {
+    url = "http://prom.domain.com/api/v1/write"
+  }
+}
+
+
+
+/* ------- Logs definition ------- */
+/* ------- Logs definition ------- */
+/* ------- Logs definition ------- */
+
+local.file_match "system_logs" {
+  path_targets = [{
+    __path__    = "/var/log/{syslog,messages,*.log}",
+    __address__ = "localhost",
+    instance    = constants.hostname,
+    job         = "linux_logs",
+  }]
+}
+
+loki.source.file "system_logs_scrape" {
+  targets    = local.file_match.system_logs.targets
+  forward_to = [loki.write.loki_push.receiver]
+}
+
+loki.source.journal "journal_logs" {
+  max_age       = "24h0m0s"
+  relabel_rules = discovery.relabel.journal_relabel.rules
+  forward_to    = [loki.write.loki_push.receiver]
+}
+
+discovery.relabel "journal_relabel" {
+  targets = []
+
+  rule {
+    source_labels = ["__journal__systemd_unit"]
+    target_label  = "unit"
+  }
+
+  rule {
+    source_labels = ["__journal__boot_id"]
+    target_label  = "boot_id"
+  }
+
+  rule {
+    source_labels = ["__journal__transport"]
+    target_label  = "transport"
+  }
+
+  rule {
+    source_labels = ["__journal_priority_keyword"]
+    target_label  = "level"
+  }
+}
+
+loki.write "loki_push" {
+  endpoint {
+    url = "http://loki.domain.com/loki/api/v1/push"
+    tenant_id = 1
+  }
+}
+
+
+
+/* ------- Profiling definition ------- */
+/* ------- Profiling definition ------- */
+/* ------- Profiling definition ------- */
+
+discovery.process "all" {
+}
+
+pyroscope.ebpf "instance" {
+ forward_to     = [pyroscope.write.endpoint.receiver]
+ targets = discovery.process.all.targets
+}
+
+pyroscope.write "endpoint" {
+ endpoint {
+  url = "http://pyroscope.domain.com"
+ }
+ external_labels = {
+  "env"      = "prod",
+  "instance" = env("HOSTNAME"),
+ }
+}
+
+
+
+/* ------- Tracing definition ------- */
+/* ------- Tracing definition ------- */
+/* ------- Tracing definition ------- */
+beyla.ebpf "default" {
+  open_port = "8080,12345"
+
+    output {
+        traces = [otelcol.exporter.otlphttp.tempo.input]
+    }
+}
+
+otelcol.receiver.otlp "otlp_receiver" {
+  grpc {
+    endpoint = "0.0.0.0:4317"
+  }
+  http {
+    endpoint = "0.0.0.0:4318"
+  }
+
+  output {
+    traces = [otelcol.exporter.otlphttp.tempo.input]
+  }
+}
+
+otelcol.exporter.otlphttp "tempo" {
+  client {
+    endpoint = "http://tempo2.domain.com"
+
+    tls {
+      insecure = true
+      insecure_skip_verify = true
+    }
+  }
+}
