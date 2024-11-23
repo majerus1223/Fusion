@@ -6,7 +6,7 @@ Refrences to create, link and deploy various monitoring components.
 * Kubernetes deployment of some kind
     * Rancher Desktop, k3s, docker desktop, etc..
 
-* In each values files files update the "domain" to whatever you plan to use
+* In each values file update the "domain" to whatever you plan to use
     * Be sure to save the files 😉
 * Setup DNS to point to your kubernetes enviroment
     * A records for loki, grafana, prometheus, pyroscope, tempo to the respective kubernetes host or cluster.
@@ -21,6 +21,8 @@ Refrences to create, link and deploy various monitoring components.
 * #### Step 1 - Add repos and update charts
 
       helm repo add grafana https://grafana.github.io/helm-charts
+      helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+
 
       helm repo update
 
@@ -53,6 +55,7 @@ ___
         helm -n monitoring-fusion install grafana grafana/grafana -f values/grafana-values.yaml
         helm -n monitoring-fusion install tempo grafana/tempo-distributed -f values/tempo-values.yaml
         helm -n monitoring-fusion install pyroscope grafana/pyroscope -f values/pyroscope-values.yaml
+        helm -n monitoring-fusion install prometheus prometheus-community/prometheus -f values/prometheus-values.yaml
 
 * ##### ☝️ or 👇
 
@@ -61,6 +64,8 @@ ___
         helm -n grafana-fusion install grafana grafana/grafana -f values/grafana-values.yaml
         helm -n tempo-fusion install tempo grafana/tempo-distributed -f values/tempo-values.yaml
         helm -n pyroscope-fusion install pyroscope grafana/pyroscope -f values/pyroscope-values.yaml
+        helm -n prometheus-fusion install prometheus prometheus-community/prometheus -f values/prometheus-values.yaml
+
 
 <br>
 

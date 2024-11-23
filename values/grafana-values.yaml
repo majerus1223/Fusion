@@ -1,0 +1,113 @@
+adminUser: admin
+adminPassword: "admin"
+
+ingress:
+  enabled: true
+  path: /
+  pathType: Prefix
+  hosts:
+    - grafana.domain.com
+
+
+persistence:
+  type: pvc
+  enabled: true
+  size: 20Gi
+  accessModes:
+    - ReadWriteOnce
+    
+plugins:
+  - grafana-clock-panel
+  - grafana-piechart-panel
+  - grafana-worldmap-panel
+  - grafana-clock-panel
+  - hpehpc-grafanaclusterview-panel
+  - sameeraswal-odometer-panel
+  - esnet-arcdiagram-panel
+  - nikosc-percenttrend-panel
+  - betatech-qrcode-panel
+  - lework-lenav-panel
+
+resources:
+  requests:
+    cpu: 200m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+service:
+  enabled: true
+  type: ClusterIP
+  port: 80
+  targetPort: 3000
+
+# Helpful Links:
+# https://grafana.com/docs/grafana/latest/administration/provisioning/#custom-http-headers-for-data-sources
+datasources:
+ datasources.yaml:
+   apiVersion: 1
+   datasources:
+   - name: Prometheus
+     type: prometheus
+     url: http://prom.domain.com
+     access: proxy
+     editable: true
+     isDefault: true
+     jsonData:
+      manageAlerts: false
+   - name: Tempo
+     type: tempo
+     access: proxy
+     url: http://tempo.domain.com
+     editable: true
+     isDefault: false
+     jsonData:
+      manageAlerts: false
+   - name: Loki
+     type: loki
+     url: http://loki.domain.com
+     access: proxy
+     editable: true
+     isDefault: false
+     jsonData:
+      manageAlerts: false
+      httpHeaderName1: 'X-Scope-OrgID'
+     secureJsonData:
+      httpHeaderValue1: '1'
+   - name: Pyroscope
+     type: grafana-pyroscope-datasource
+     access: proxy
+     url: http://pyroscope.domain.com
+     editable: true
+     isDefault: false
+     jsonData:
+      manageAlerts: false
+
+  # env:
+  #   GF_SERVER_ROOT_URL: "http://grafana.domain.com"
+  #   GF_SECURITY_ALLOW_EMBEDDING: "true"
+  #   GF_AUTH_ANONYMOUS_ENABLED: "false"
+
+  # datasources:
+  #   datasources.yaml:
+  #     apiVersion: 1
+  #     datasources:
+  #       - name: Prometheus
+  #         type: prometheus
+  #         url: http://prometheus-server
+  #         access: proxy
+  #         isDefault: true
+
+  # dashboardProviders:
+  #   dashboardproviders.yaml:
+  #     apiVersion: 1
+  #     providers:
+  #       - name: 'default'
+  #         orgId: 1
+  #         folder: ''
+  #         type: file
+  #         disableDeletion: false
+  #         editable: true
+  #         options:
+  #           path: /var/lib/grafana/dashboards
