@@ -4,7 +4,7 @@ gateway:
     enabled: true
     tls: []
     hosts:
-      - host: tempo2.domain.com
+      - host: tempo.domain.com
         paths:
           - path: /
             pathType: Prefix
