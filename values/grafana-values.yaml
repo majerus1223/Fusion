@@ -83,31 +83,3 @@ datasources:
      isDefault: false
      jsonData:
       manageAlerts: false
-
-  # env:
-  #   GF_SERVER_ROOT_URL: "http://grafana.domain.com"
-  #   GF_SECURITY_ALLOW_EMBEDDING: "true"
-  #   GF_AUTH_ANONYMOUS_ENABLED: "false"
-
-  # datasources:
-  #   datasources.yaml:
-  #     apiVersion: 1
-  #     datasources:
-  #       - name: Prometheus
-  #         type: prometheus
-  #         url: http://prometheus-server
-  #         access: proxy
-  #         isDefault: true
-
-  # dashboardProviders:
-  #   dashboardproviders.yaml:
-  #     apiVersion: 1
-  #     providers:
-  #       - name: 'default'
-  #         orgId: 1
-  #         folder: ''
-  #         type: file
-  #         disableDeletion: false
-  #         editable: true
-  #         options:
-  #           path: /var/lib/grafana/dashboards
