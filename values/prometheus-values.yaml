@@ -1,0 +1,282 @@
+rbac:
+  create: true
+  prometheus:
+    enabled: true
+    name: configmap-reload
+    image:
+      repository: quay.io/prometheus-operator/prometheus-config-reloader
+      tag: v0.78.1
+      digest: ""
+      pullPolicy: IfNotPresent
+    containerPort: 8080
+    containerPortName: metrics
+    extraArgs: {}
+    extraVolumeDirs: []
+
+    extraVolumeMounts: []
+    extraConfigmapMounts: []
+
+    containerSecurityContext: {}
+
+    ## Settings for Prometheus reloader's readiness, liveness and startup probes
+    ## Ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
+    ##
+
+    livenessProbe:
+      httpGet:
+        path: /healthz
+        port: metrics
+        scheme: HTTP
+      periodSeconds: 10
+      initialDelaySeconds: 2
+
+    readinessProbe:
+      httpGet:
+        path: /healthz
+        port: metrics
+        scheme: HTTP
+      periodSeconds: 10
+
+    startupProbe:
+      enabled: false
+      httpGet:
+        path: /healthz
+        port: metrics
+        scheme: HTTP
+      periodSeconds: 10
+
+    ## configmap-reload resource requests and limits
+    ## Ref: http://kubernetes.io/docs/user-guide/compute-resources/
+    ##
+    resources: {}
+
+server:
+  name: server
+  image:
+    repository: quay.io/prometheus/prometheus
+    tag: ""
+    digest: ""
+    pullPolicy: IfNotPresent
+
+  ## Prometheus server command
+  ##
+  command: []
+
+  ## prometheus server priorityClassName
+  ##
+  priorityClassName: ""
+  #### THIS CAUSES INGRESS TO FAIL
+  #baseURL: "prometheus.sparks.com"
+  env: []
+  defaultFlagsOverride: []
+
+  extraFlags:
+    - web.enable-lifecycle
+    - web.enable-remote-write-receiver
+
+
+  ## Path to a configuration file on prometheus server container FS
+  configPath: /etc/config/prometheus.yml
+
+  ### The data directory used by prometheus to set --storage.tsdb.path
+  ### When empty server.persistentVolume.mountPath is used instead
+  storagePath: ""
+
+  global:
+    ## How frequently to scrape targets by default
+    ##
+    scrape_interval: 30s
+    ## How long until a scrape request times out
+    ##
+    scrape_timeout: 10s
+    ## How frequently to evaluate rules
+    ##
+    evaluation_interval: 1m
+  ## https://prometheus.io/docs/prometheus/latest/configuration/configuration/#remote_write
+  ##
+  remoteWrite: []
+  ## https://prometheus.io/docs/prometheus/latest/configuration/configuration/#remote_read
+  ##
+  remoteRead: []
+
+  ## https://prometheus.io/docs/prometheus/latest/configuration/configuration/#tsdb
+  ##
+  tsdb: {}
+    # out_of_order_time_window: 0s
+
+  ## https://prometheus.io/docs/prometheus/latest/configuration/configuration/#exemplars
+  ## Must be enabled via --enable-feature=exemplar-storage
+  ##
+  exemplars: {}
+    # max_exemplars: 100000
+
+  ## Custom HTTP headers for Liveness/Readiness/Startup Probe
+  ##
+  ## Useful for providing HTTP Basic Auth to healthchecks
+  probeHeaders: []
+    # - name: "Authorization"
+    #   value: "Bearer ABCDEabcde12345"
+
+  ## Additional Prometheus server container arguments
+  ## Set to null for argumentless flags
+  ##
+  extraArgs: {}
+    # web.enable-remote-write-receiver: null
+
+  ## Additional InitContainers to initialize the pod
+  ##
+  extraInitContainers: []
+
+  ## Additional Prometheus server Volume mounts
+  ##
+  extraVolumeMounts: []
+
+  ## Additional Prometheus server Volumes
+  ##
+  extraVolumes: []
+
+  ## Additional Prometheus server hostPath mounts
+  ##
+  extraHostPathMounts: []
+    # - name: certs-dir
+    #   mountPath: /etc/kubernetes/certs
+    #   subPath: ""
+    #   hostPath: /etc/kubernetes/certs
+    #   readOnly: true
+
+  extraConfigmapMounts: []
+    # - name: certs-configmap
+    #   mountPath: /prometheus
+    #   subPath: ""
+    #   configMap: certs-configmap
+    #   readOnly: true
+
+  ## Additional Prometheus server Secret mounts
+  # Defines additional mounts with secrets. Secrets must be manually created in the namespace.
+  extraSecretMounts: []
+    # - name: secret-files
+    #   mountPath: /etc/secrets
+    #   subPath: ""
+    #   secretName: prom-secret-files
+    #   readOnly: true
+
+  ## ConfigMap override where fullname is {{.Release.Name}}-{{.Values.server.configMapOverrideName}}
+  ## Defining configMapOverrideName will cause templates/server-configmap.yaml
+  ## to NOT generate a ConfigMap resource
+  ##
+  configMapOverrideName: ""
+
+  ## Extra labels for Prometheus server ConfigMap (ConfigMap that holds serverFiles)
+  extraConfigmapLabels: {}
+
+  ## Override the prometheus.server.fullname for all objects related to the Prometheus server
+  fullnameOverride: ""
+
+  ingress:
+    ## If true, Prometheus server Ingress will be created
+    ##
+    enabled: true
+    extraLabels: {}
+
+    ##
+    hosts: 
+      - prometheus.sparks.com
+    
+    path: /
+    pathType: Prefix
+
+
+  ## Server Deployment Strategy type
+  strategy:
+    type: Recreate
+
+  ## hostAliases allows adding entries to /etc/hosts inside the containers
+  hostAliases: []
+  #   - ip: "127.0.0.1"
+  #     hostnames:
+  #       - "example.com"
+
+  ## Node tolerations for server scheduling to nodes with taints
+  ## Ref: https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
+  ##
+  tolerations: []
+    # - key: "key"
+    #   operator: "Equal|Exists"
+    #   value: "value"
+    #   effect: "NoSchedule|PreferNoSchedule|NoExecute(1.6 only)"
+
+  ## Node labels for Prometheus server pod assignment
+  ## Ref: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/
+  ##
+  nodeSelector: {}
+
+  ## Pod affinity
+  ##
+  affinity: {}
+
+  ## Pod anti-affinity can prevent the scheduler from placing Prometheus server replicas on the same node.
+  ## The value "soft" means that the scheduler should *prefer* to not schedule two replica pods onto the same node but no guarantee is provided.
+  ## The value "hard" means that the scheduler is *required* to not schedule two replica pods onto the same node.
+  ## The default value "" will disable pod anti-affinity so that no anti-affinity rules will be configured (unless set in `server.affinity`).
+  ##
+  podAntiAffinity: ""
+
+  ## If anti-affinity is enabled sets the topologyKey to use for anti-affinity.
+  ## This can be changed to, for example, failure-domain.beta.kubernetes.io/zone
+  ##
+  podAntiAffinityTopologyKey: kubernetes.io/hostname
+
+  ## Pod topology spread constraints
+  ## ref. https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/
+  topologySpreadConstraints: []
+
+  ## PodDisruptionBudget settings
+  ## ref: https://kubernetes.io/docs/concepts/workloads/pods/disruptions/
+  ##
+  podDisruptionBudget:
+    enabled: false
+    maxUnavailable: 1
+    # minAvailable: 1
+    ## unhealthyPodEvictionPolicy is available since 1.27.0 (beta)
+    ## https://kubernetes.io/docs/tasks/run-application/configure-pdb/#unhealthy-pod-eviction-policy
+    # unhealthyPodEvictionPolicy: IfHealthyBudget
+
+  ## Use an alternate scheduler, e.g. "stork".
+  ## ref: https://kubernetes.io/docs/tasks/administer-cluster/configure-multiple-schedulers/
+  ##
+  # schedulerName:
+
+  persistentVolume:
+    enabled: true
+    accessModes:
+      - ReadWriteOnce
+    mountPath: /data
+    size: 20Gi
+
+  ## Use a StatefulSet if replicaCount needs to be greater than 1 (see below)
+  ##
+  replicaCount: 1
+
+
+
+  securityContext:
+    runAsUser: 65534
+    runAsNonRoot: true
+    runAsGroup: 65534
+    fsGroup: 65534
+
+
+ 
+
+  ## Prometheus server pod termination grace period
+  ##
+  terminationGracePeriodSeconds: 300
+
+  ## Prometheus data retention period (default if not specified is 15 days)
+  ##
+  retention: "30d"
+
+  ## Prometheus' data retention size. Supported units: B, KB, MB, GB, TB, PB, EB.
+  ##
+  retentionSize: ""
+

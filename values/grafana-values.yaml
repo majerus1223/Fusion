@@ -6,7 +6,7 @@ ingress:
   path: /
   pathType: Prefix
   hosts:
-    - grafana.domain.com
+    - grafana.sparks.com
 
 
 persistence:
@@ -50,7 +50,7 @@ datasources:
    datasources:
    - name: Prometheus
      type: prometheus
-     url: http://prom.domain.com
+     url: http://prometheus.sparks.com
      access: proxy
      editable: true
      isDefault: true
@@ -59,14 +59,14 @@ datasources:
    - name: Tempo
      type: tempo
      access: proxy
-     url: http://tempo.domain.com
+     url: http://tempo.sparks.com
      editable: true
      isDefault: false
      jsonData:
       manageAlerts: false
    - name: Loki
      type: loki
-     url: http://loki.domain.com
+     url: http://loki.sparks.com
      access: proxy
      editable: true
      isDefault: false
@@ -78,7 +78,7 @@ datasources:
    - name: Pyroscope
      type: grafana-pyroscope-datasource
      access: proxy
-     url: http://pyroscope.domain.com
+     url: http://pyroscope.sparks.com
      editable: true
      isDefault: false
      jsonData:

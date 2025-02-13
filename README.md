@@ -33,6 +33,7 @@ ___
 
       #Single Namespace 
       kubectl create namespace monitoring-fusion
+      kubectl create namespace tempo-fusion   <- Required for the moment..
 
 * ##### ☝️ or 👇
 
@@ -42,6 +43,7 @@ ___
         kubectl create namespace tempo-fusion
         kubectl create namespace pyroscope-fusion
         kubectl create namespace prometheus-fusion
+        kubectl create namespace alloy-fusion
 <br>
 
 ___
@@ -51,20 +53,22 @@ ___
 
 
         # Single Namespace Deployment 
-        helm -n monitoring-fusion install loki grafana/loki -f values/loki-values.yaml
-        helm -n monitoring-fusion install grafana grafana/grafana -f values/grafana-values.yaml
-        helm -n monitoring-fusion install tempo grafana/tempo-distributed -f values/tempo-values.yaml
-        helm -n monitoring-fusion install pyroscope grafana/pyroscope -f values/pyroscope-values.yaml
-        helm -n monitoring-fusion install prometheus prometheus-community/prometheus -f values/prometheus-values.yaml
+        helm -n monitoring-fusion upgrade --install loki grafana/loki -f values/loki-values.yaml
+        helm -n monitoring-fusion upgrade --install grafana grafana/grafana -f values/grafana-values.yaml
+        helm -n tempo-fusion upgrade --install tempo grafana/tempo-distributed -f values/tempo-values.yaml
+        helm -n monitoring-fusion upgrade --install pyroscope grafana/pyroscope -f values/pyroscope-values.yaml
+        helm -n monitoring-fusion upgrade --install prometheus prometheus-community/prometheus -f values/prometheus-values.yaml
+        helm -n monitoring-fusion upgrade --install alloy  grafana/alloy -f values/alloy-values.yaml
 
 * ##### ☝️ or 👇
 
         # Individual Namespace Deployment
-        helm -n loki-fusion install loki grafana/loki -f values/loki-values.yaml
-        helm -n grafana-fusion install grafana grafana/grafana -f values/grafana-values.yaml
-        helm -n tempo-fusion install tempo grafana/tempo-distributed -f values/tempo-values.yaml
-        helm -n pyroscope-fusion install pyroscope grafana/pyroscope -f values/pyroscope-values.yaml
-        helm -n prometheus-fusion install prometheus prometheus-community/prometheus -f values/prometheus-values.yaml
+        helm -n loki-fusion upgrade --install loki grafana/loki -f values/loki-values.yaml
+        helm -n grafana-fusion upgrade --install grafana grafana/grafana -f values/grafana-values.yaml
+        helm -n tempo-fusion upgrade --install tempo grafana/tempo-distributed -f values/tempo-values.yaml
+        helm -n pyroscope-fusion upgrade --install pyroscope grafana/pyroscope -f values/pyroscope-values.yaml
+        helm -n prometheus-fusion upgrade --install prometheus prometheus-community/prometheus -f values/prometheus-values.yaml
+        helm -n alloy-fusion upgrade --install alloy  grafana/alloy -f values/alloy-values.yaml
 
 
 <br>

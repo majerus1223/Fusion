@@ -11,6 +11,8 @@ loki:
   ingester:
     chunk_encoding: snappy
   limits_config:
+    # Should be default in 3.0 but who knows.
+    allow_structured_metadata: true
     # These are bad limits, 0 permits unlimited except for ingestion rates
     max_global_streams_per_user: 0
     ingestion_rate_mb: 999999
@@ -20,14 +22,23 @@ loki:
   querier:
     max_concurrent: 4
 
+
 gateway:
  ingress:
    enabled: true
    hosts:
-     - host: loki.domain.com
+     - host: loki.sparks.com
        paths:
          - path: /
            pathType: Prefix
+         - path: /otlp
+           pathType: Prefix
+           service:
+              name: loki-backend
+              port: 3100
+         - path: /grpc
+           pathType: Prefix
+           port: 4317
 
 deploymentMode: SimpleScalable
 
@@ -45,6 +56,10 @@ write:
   podAntiAffinity: null
 minio:
   enabled: true
+  # Required if installed in single namespace
+  serviceAccount:
+    create: false
+    name: loki-minio-sa
   persistence:
     size: 50Gi
 singleBinary:

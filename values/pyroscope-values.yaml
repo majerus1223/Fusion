@@ -245,7 +245,7 @@ minio:
 ingress:
   enabled: true
   hosts:
-    - pyroscope.domain.com
+    - pyroscope.sparks.com
   # tls:
   #   - secretName: certificate
 

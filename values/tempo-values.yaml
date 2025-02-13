@@ -4,7 +4,7 @@ gateway:
     enabled: true
     tls: []
     hosts:
-      - host: tempo.domain.com
+      - host: tempo.sparks.com
         paths:
           - path: /
             pathType: Prefix
@@ -23,6 +23,10 @@ minio:
   mode: standalone
   rootUser: grafana-tempo
   rootPassword: supersecret
+  # Required if installed in single
+  serviceAccount:
+    create: false
+    name: tempo-minio-sa
   buckets:
     - name: tempo-traces
       policy: none
