@@ -86,11 +86,11 @@ datasources:
       manageAlerts: false
 
 dashboards:
-#     k8s:
-#       k8s:
-#         gnetId: 22860
-#         revision: 1
-#         datasource: Prometheus
+    k8s:
+      k8s:
+        gnetId: 15759
+        revision: 1
+        datasource: Prometheus
 
     k8s2:
       k8s2:
@@ -103,14 +103,14 @@ dashboardProviders:
   dashboardproviders.yaml:
     apiVersion: 1
     providers:
-#       - name: k8s
-#         orgId: 1
-#         folder: k8s
-#         type: file
-#         disableDeletion: true
-#         editable: true
-#         options:
-#           path: /var/lib/grafana/dashboards/k8s
+      - name: k8s
+        orgId: 1
+        folder: k8s
+        type: file
+        disableDeletion: true
+        editable: true
+        options:
+          path: /var/lib/grafana/dashboards/k8s
       - name: k8s2
         orgId: 1
         folder: k8s2
