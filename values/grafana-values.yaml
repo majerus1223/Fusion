@@ -95,7 +95,7 @@ dashboards:
     k8s2:
       k8s2:
         gnetId: 22861
-        revision: 1
+        revision: 3
         datasource: Prometheus
 # # 22859
 # # 22856 og
