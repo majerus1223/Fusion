@@ -1,0 +1,237 @@
+alloy:
+  extraPorts:
+  - name: "otelgrpc"
+    port: 4317
+    targetPort: 4317
+    protocol: "TCP"
+  - name: "otelhttp"
+    port: 4318
+    targetPort: 4318
+    protocol: "TCP"
+  configMap:
+    content: |-
+      // Write your Alloy config here:
+      logging {
+        level = "info"
+        format = "logfmt"
+      }
+      loki.write "default" {
+        endpoint {
+          url = "http://loki.sparks.com/loki/api/v1/push"
+          tenant_id = 1
+        }
+      }
+
+      prometheus.remote_write "default" {
+        endpoint {
+          url = "http://prometheus.sparks.com/api/v1/write"
+        }
+      }
+
+      // ########################################################################
+      // Log CONFIGURATION
+      // ########################################################################
+      local.file_match "node_logs" {
+        path_targets = [{
+            // Monitor syslog to scrape node-logs
+            __path__  = "/var/log/syslog",
+            job       = "node/syslog",
+            node_name = sys.env("HOSTNAME"),
+            cluster   = "rancher",
+        }]
+      }
+
+      // loki.source.file reads log entries from files and forwards them to other loki.* components.
+      // You can specify multiple loki.source.file components by giving them different labels.
+      loki.source.file "node_logs" {
+        targets    = local.file_match.node_logs.targets
+        forward_to = [loki.write.default.receiver]
+      }
+
+      discovery.kubernetes "pod" {
+        role = "pod"
+      }
+
+      discovery.relabel "pod_logs" {
+        targets = discovery.kubernetes.pod.targets
+
+        // Label creation - "namespace" field from "__meta_kubernetes_namespace"
+        rule {
+          source_labels = ["__meta_kubernetes_namespace"]
+          action = "replace"
+          target_label = "namespace"
+        }
+
+        // Label creation - "pod" field from "__meta_kubernetes_pod_name"
+        rule {
+          source_labels = ["__meta_kubernetes_pod_name"]
+          action = "replace"
+          target_label = "pod"
+        }
+
+        // Label creation - "container" field from "__meta_kubernetes_pod_container_name"
+        rule {
+          source_labels = ["__meta_kubernetes_pod_container_name"]
+          action = "replace"
+          target_label = "container"
+        }
+
+        // Label creation -  "app" field from "__meta_kubernetes_pod_label_app_kubernetes_io_name"
+        rule {
+          source_labels = ["__meta_kubernetes_pod_label_app_kubernetes_io_name"]
+          action = "replace"
+          target_label = "app"
+        }
+
+        // Label creation -  "job" field from "__meta_kubernetes_namespace" and "__meta_kubernetes_pod_container_name"
+        // Concatenate values __meta_kubernetes_namespace/__meta_kubernetes_pod_container_name
+        rule {
+          source_labels = ["__meta_kubernetes_namespace", "__meta_kubernetes_pod_container_name"]
+          action = "replace"
+          target_label = "job"
+          separator = "/"
+          replacement = "$1"
+        }
+
+        // Label creation - "container" field from "__meta_kubernetes_pod_uid" and "__meta_kubernetes_pod_container_name"
+        // Concatenate values __meta_kubernetes_pod_uid/__meta_kubernetes_pod_container_name.log
+        rule {
+          source_labels = ["__meta_kubernetes_pod_uid", "__meta_kubernetes_pod_container_name"]
+          action = "replace"
+          target_label = "__path__"
+          separator = "/"
+          replacement = "/var/log/pods/*$1/*.log"
+        }
+
+        // Label creation -  "container_runtime" field from "__meta_kubernetes_pod_container_id"
+        rule {
+          source_labels = ["__meta_kubernetes_pod_container_id"]
+          action = "replace"
+          target_label = "container_runtime"
+          regex = "^(\\S+):\\/\\/.+$"
+          replacement = "$1"
+        }
+      }
+
+
+      loki.source.kubernetes "pod_logs" {
+        targets    = discovery.relabel.pod_logs.output
+        forward_to = [loki.process.pod_logs.receiver]
+      }
+
+      // loki.process receives log entries from other Loki components, applies one or more processing stages,
+      // and forwards the results to the list of receivers in the component's arguments.
+      loki.process "pod_logs" {
+        stage.static_labels {
+            values = {
+              cluster = "rancher",
+            }
+        }
+
+        forward_to = [loki.write.default.receiver]
+      }
+      // ########################################################################
+      // Metric CONFIGURATION
+      // ########################################################################
+      discovery.kubernetes "allPods" {
+        role = "pod"
+      }
+      discovery.kubernetes "allNodes" {
+        role = "node"
+      }
+      discovery.kubernetes "allServices" {
+        role = "service"
+      }
+      discovery.kubernetes "allIngress" {
+        role = "ingress"
+      }
+
+
+      prometheus.scrape "everything" {
+        targets    = array.concat(discovery.kubernetes.allPods.targets, 
+                                  discovery.kubernetes.allNodes.targets,
+                                  discovery.kubernetes.allServices.targets,
+                                  discovery.kubernetes.allIngress.targets,)
+        forward_to = [prometheus.remote_write.default.receiver]
+      }
+
+      prometheus.scrape "windows" {
+        targets    = [{"__address__" = "192.168.1.186:9050", "instance" = "thing"}]
+        forward_to = [prometheus.remote_write.default.receiver]
+        metrics_path    = "/metrics"
+      }
+      
+      // ########################################################################
+      // Receiver Metric CONFIGURATION
+      // ########################################################################
+      prometheus.receive_http "prometheusReceive" {
+        http {
+          listen_address = "0.0.0.0"
+          listen_port = 9095
+        }
+        forward_to = [prometheus.remote_write.default.receiver]
+      }
+
+
+      otelcol.receiver.otlp "default" {
+          http {
+              logs_url_path = "/v1/logs"
+              endpoint = "0.0.0.0:4318"
+          }
+          grpc {}
+
+          output {
+              logs = [otelcol.processor.attributes.default.input]
+          }
+      }
+
+      otelcol.processor.attributes "default" {
+      
+          output {
+              logs = [otelcol.processor.batch.default.input]
+          }
+      }
+
+      otelcol.processor.batch "default" {
+          output {
+              logs = [otelcol.exporter.otlphttp.default.input]
+          }
+      }
+
+      otelcol.exporter.otlphttp "default" {
+          client {
+              endpoint = "http://loki.sparks.com/otlp"
+              headers  = {
+                "X-Scope-OrgID" = "1",
+              }
+  
+              tls{
+              insecure = true
+              insecure_skip_verify = true
+              }
+          }
+      }
+      livedebugging {
+        enabled = true
+      }
+service:
+  enabled: true
+  ports:
+   - name: oltp
+     port: 4318
+     targetPort: 4318
+ingress:
+  enabled: true
+  path: /
+  faroPort: 12345
+  pathType: Prefix
+  hosts:
+    - alloy.sparks.com
+  extraPaths:
+    - path: /v1/logs
+      pathType: Prefix
+      backend:
+        service:
+          name: alloy
+          port:
+            number: 4318
