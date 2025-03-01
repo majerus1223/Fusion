@@ -53,12 +53,12 @@ ___
 
 
         # Single Namespace Deployment 
-        helm -n monitoring-fusion upgrade --install loki grafana/loki -f values/loki-values.yaml
-        helm -n monitoring-fusion upgrade --install grafana grafana/grafana -f values/grafana-values.yaml
-        helm -n tempo-fusion upgrade --install tempo grafana/tempo-distributed -f values/tempo-values.yaml
-        helm -n monitoring-fusion upgrade --install pyroscope grafana/pyroscope -f values/pyroscope-values.yaml
-        helm -n monitoring-fusion upgrade --install prometheus prometheus-community/prometheus -f values/prometheus-values.yaml
-        helm -n monitoring-fusion upgrade --install alloy  grafana/alloy -f values/alloy-values.yaml
+        helm -n monitoring-fusion upgrade --install loki grafana/loki -f values/loki-values.yaml --set domain=sparks.com
+        helm -n monitoring-fusion upgrade --install grafana grafana/grafana -f values/grafana-values.yaml --set domain=sparks.com
+        helm -n tempo-fusion upgrade --install tempo grafana/tempo-distributed -f values/tempo-values.yaml --set domain=sparks.com
+        helm -n monitoring-fusion upgrade --install pyroscope grafana/pyroscope -f values/pyroscope-values.yaml--set domain=sparks.com
+        helm -n monitoring-fusion upgrade --install prometheus prometheus-community/prometheus -f values/prometheus-values.yaml --set domain=sparks.com
+        helm -n monitoring-fusion upgrade --install alloy  grafana/alloy -f values/alloy-values.yaml --set domain=sparks.com
 
 * ##### ☝️ or 👇
 
