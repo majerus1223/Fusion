@@ -1,4 +1,4 @@
-domain: sparks.com
+# domain: sparks.com
 
 alloy:
   extraPorts:
@@ -208,7 +208,7 @@ alloy:
 
       otelcol.exporter.otlphttp "default" {
           client {
-              endpoint = "http://loki.sparks.com/otlp"
+              endpoint = "http://loki.{{ .Values.domain }}.com/otlp"
               headers  = {
                 "X-Scope-OrgID" = "1",
               }
@@ -234,7 +234,7 @@ ingress:
   faroPort: 12345
   pathType: Prefix
   hosts:
-    - alloy.sparks.com
+    - alloy.{{ .Values.domain }}
   extraPaths:
     - path: /v1/logs
       pathType: Prefix
