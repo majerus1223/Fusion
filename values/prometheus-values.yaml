@@ -1,3 +1,15 @@
+domain: sparks.com
+
+
+kube-state-metrics:
+  enabled: true
+prometheus-node-exporter:
+  enabled: true
+# Disable all prometheus Scraping , so that alloy does not duplicate metrics  
+serverFiles:
+    prometheus.yml:
+      scrape_configs: null
+
 rbac:
   create: true
   prometheus:
@@ -94,7 +106,21 @@ server:
     evaluation_interval: 1m
   ## https://prometheus.io/docs/prometheus/latest/configuration/configuration/#remote_write
   ##
-  remoteWrite: []
+  remoteWrite:
+    # - url: http://prometheus.sparks.com/api/v1/write
+    #   write_relabel_configs:
+    #   - source_labels: []
+    #     target_label: origin
+    #     regex: .*
+    #     replacement: fireCluster
+    #     action: replace
+  remoteWrite:
+    # - url: http://prometheus.sparks.com/api/v1/write
+    #   write_relabel_configs:
+    #   - action: replace
+    #     target_label: origin
+    #     replacement: smokeClusterTest
+
   ## https://prometheus.io/docs/prometheus/latest/configuration/configuration/#remote_read
   ##
   remoteRead: []
@@ -180,7 +206,7 @@ server:
 
     ##
     hosts: 
-      - prometheus.sparks.com
+      - prometheus.{{ .Values.domain }}
     
     path: /
     pathType: Prefix

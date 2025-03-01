@@ -1,3 +1,5 @@
+domain: sparks.com
+
 alloy:
   extraPorts:
   - name: "otelgrpc"
@@ -17,14 +19,14 @@ alloy:
       }
       loki.write "default" {
         endpoint {
-          url = "http://loki.sparks.com/loki/api/v1/push"
+          url = "http://loki.{{ .Values.domain }}/loki/api/v1/push"
           tenant_id = 1
         }
       }
 
       prometheus.remote_write "default" {
         endpoint {
-          url = "http://prometheus.sparks.com/api/v1/write"
+          url = "http://prometheus.{{ .Values.domain }}/api/v1/write"
         }
       }
 
@@ -145,14 +147,20 @@ alloy:
       discovery.kubernetes "allIngress" {
         role = "ingress"
       }
+      discovery.kubernetes "allEndpoints" {
+        role = "endpoints"
+      }
 
 
       prometheus.scrape "everything" {
-        targets    = array.concat(discovery.kubernetes.allPods.targets, 
-                                  discovery.kubernetes.allNodes.targets,
-                                  discovery.kubernetes.allServices.targets,
-                                  discovery.kubernetes.allIngress.targets,)
+        targets    = array.concat(discovery.kubernetes.allEndpoints.targets, 
+                                  )
+        
         forward_to = [prometheus.remote_write.default.receiver]
+      }
+
+      prometheus.operator.servicemonitors "prometheus" {
+          forward_to = [prometheus.remote_write.default.receiver]
       }
 
       prometheus.scrape "windows" {
