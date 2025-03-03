@@ -1,6 +1,9 @@
 # domain: sparks.com
-
+crds:
+  create: true
 alloy:
+  serviceMonitor:
+    enabled: true
   extraPorts:
   - name: "otelgrpc"
     port: 4317
@@ -149,6 +152,10 @@ alloy:
       }
       discovery.kubernetes "allEndpoints" {
         role = "endpoints"
+        selectors {
+          role = "endpoints"
+          label = "app.kubernetes.io/name=grafana"
+        }
       }
 
 
@@ -159,8 +166,13 @@ alloy:
         forward_to = [prometheus.remote_write.default.receiver]
       }
 
-      prometheus.operator.servicemonitors "prometheus" {
-          forward_to = [prometheus.remote_write.default.receiver]
+      prometheus.operator.servicemonitors "services" {
+        forward_to = [prometheus.remote_write.default.receiver]
+        rule {
+          action = "keep"
+          regex = sys.env("HOSTNAME")
+          source_labels = ["__meta_kubernetes_pod_node_name"]
+        }
       }
 
       prometheus.scrape "windows" {
